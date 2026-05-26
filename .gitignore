@@ -1,0 +1,17 @@
+# Visual Studio
+.vs/
+x64/
+Debug/
+Release/
+
+# Build output
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# Visual Studio user files
+*.vcxproj.user
+
+# SDL runtime
+SDL3.dll
