@@ -1,0 +1,14 @@
+# Visual Studio folders
+.vs/
+x64/
+Debug/
+Release/
+
+# Build files
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# SDL runtime
+SDL3.dll
