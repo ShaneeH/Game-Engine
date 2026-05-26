@@ -9,6 +9,7 @@ Release/
 *.exe
 *.pdb
 *.ilk
+*.vcxproj.user
 
 # SDL runtime
 SDL3.dll
