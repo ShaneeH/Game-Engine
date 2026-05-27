@@ -33,5 +33,9 @@ private:
 
     bool collided;
 
+    float moveSpeed;
+
+    float enemyVelocityY;
+
     float velocityX;
 };

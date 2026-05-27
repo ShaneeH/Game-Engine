@@ -25,7 +25,7 @@ Game::Game()
     rectWidth = 200;
     rectHeight = 150;
 
-    velocityX = 0.2f;
+    moveSpeed = 5.0f;
 
     // Enemy
 
@@ -34,6 +34,8 @@ Game::Game()
 
     enemyWidth = 250;
     enemyHeight = 200;
+
+    enemyVelocityY = 0.3f;
 
     collided = false;
 
@@ -67,8 +69,6 @@ void Game::ProcessInput()
 {
     SDL_Event event;
 
-    const float moveSpeed = 5.0f;
-
     while (SDL_PollEvent(&event))
     {
         if (event.type == SDL_EVENT_QUIT)
@@ -82,39 +82,68 @@ void Game::ProcessInput()
             {
                 running = false;
             }
-
-            switch (event.key.scancode)
-            {
-            case SDL_SCANCODE_W:
-                rectY -= moveSpeed;
-                break;
-
-            case SDL_SCANCODE_S:
-                rectY += moveSpeed;
-                break;
-
-            case SDL_SCANCODE_A:
-                rectX -= moveSpeed;
-                break;
-
-            case SDL_SCANCODE_D:
-                rectX += moveSpeed;
-                break;
-            }
         }
+    }
+
+    // Continuous movement
+
+    const bool* keyboardState = SDL_GetKeyboardState(NULL);
+
+    if (keyboardState[SDL_SCANCODE_W])
+    {
+        rectY -= moveSpeed;
+    }
+
+    if (keyboardState[SDL_SCANCODE_S])
+    {
+        rectY += moveSpeed;
+    }
+
+    if (keyboardState[SDL_SCANCODE_A])
+    {
+        rectX -= moveSpeed;
+    }
+
+    if (keyboardState[SDL_SCANCODE_D])
+    {
+        rectX += moveSpeed;
     }
 }
 
 void Game::Update()
 {
-    rectX += velocityX;
+    // Enemy movement
 
-    if (rectX >= 1200 || rectX <= 0)
+    enemyY += enemyVelocityY;
+
+    if (enemyY >= 900 || enemyY <= 0)
     {
-        velocityX *= -1;
+        enemyVelocityY *= -1;
     }
 
-    // Collision Detection
+    // Screen bounds
+
+    if (rectX < 0)
+    {
+        rectX = 0;
+    }
+
+    if (rectX + rectWidth > 1600)
+    {
+        rectX = 1600 - rectWidth;
+    }
+
+    if (rectY < 0)
+    {
+        rectY = 0;
+    }
+
+    if (rectY + rectHeight > 1200)
+    {
+        rectY = 1200 - rectHeight;
+    }
+
+    // Collision
 
     if (rectX < enemyX + enemyWidth &&
         rectX + rectWidth > enemyX &&
@@ -135,25 +164,23 @@ void Game::Render()
 
     SDL_RenderClear(renderer);
 
-    // Player Rectangle
-
-    SDL_FRect playerRect = {
+    SDL_FRect playerRect =
+    {
         rectX,
         rectY,
         rectWidth,
         rectHeight
     };
 
-    // Enemy Rectangle
-
-    SDL_FRect enemyRect = {
+    SDL_FRect enemyRect =
+    {
         enemyX,
         enemyY,
         enemyWidth,
         enemyHeight
     };
 
-    // Player Color
+    // Player
 
     if (collided)
     {
@@ -166,7 +193,7 @@ void Game::Render()
 
     SDL_RenderFillRect(renderer, &playerRect);
 
-    // Enemy Color
+    // Enemy
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
 
