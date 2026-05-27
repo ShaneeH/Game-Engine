@@ -8,8 +8,8 @@ Game::Game()
 
     window = SDL_CreateWindow(
         "Shane Engine",
-        800,
-        600,
+        1600,
+        1200,
         0
     );
 
@@ -17,10 +17,25 @@ Game::Game()
 
     running = true;
 
+    // Player
+
     rectX = 100;
     rectY = 200;
 
+    rectWidth = 200;
+    rectHeight = 150;
+
     velocityX = 0.2f;
+
+    // Enemy
+
+    enemyX = 700;
+    enemyY = 300;
+
+    enemyWidth = 250;
+    enemyHeight = 200;
+
+    collided = false;
 
     std::cout << "Engine Started\n";
 }
@@ -43,12 +58,16 @@ void Game::Run()
         Update();
 
         Render();
+
+        SDL_Delay(16);
     }
 }
 
 void Game::ProcessInput()
 {
     SDL_Event event;
+
+    const float moveSpeed = 5.0f;
 
     while (SDL_PollEvent(&event))
     {
@@ -63,6 +82,25 @@ void Game::ProcessInput()
             {
                 running = false;
             }
+
+            switch (event.key.scancode)
+            {
+            case SDL_SCANCODE_W:
+                rectY -= moveSpeed;
+                break;
+
+            case SDL_SCANCODE_S:
+                rectY += moveSpeed;
+                break;
+
+            case SDL_SCANCODE_A:
+                rectX -= moveSpeed;
+                break;
+
+            case SDL_SCANCODE_D:
+                rectX += moveSpeed;
+                break;
+            }
         }
     }
 }
@@ -71,9 +109,23 @@ void Game::Update()
 {
     rectX += velocityX;
 
-    if (rectX >= 600 || rectX <= 0)
+    if (rectX >= 1200 || rectX <= 0)
     {
         velocityX *= -1;
+    }
+
+    // Collision Detection
+
+    if (rectX < enemyX + enemyWidth &&
+        rectX + rectWidth > enemyX &&
+        rectY < enemyY + enemyHeight &&
+        rectY + rectHeight > enemyY)
+    {
+        collided = true;
+    }
+    else
+    {
+        collided = false;
     }
 }
 
@@ -83,11 +135,42 @@ void Game::Render()
 
     SDL_RenderClear(renderer);
 
-    SDL_FRect rect = { rectX, rectY, 200, 150 };
+    // Player Rectangle
 
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_FRect playerRect = {
+        rectX,
+        rectY,
+        rectWidth,
+        rectHeight
+    };
 
-    SDL_RenderFillRect(renderer, &rect);
+    // Enemy Rectangle
+
+    SDL_FRect enemyRect = {
+        enemyX,
+        enemyY,
+        enemyWidth,
+        enemyHeight
+    };
+
+    // Player Color
+
+    if (collided)
+    {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    }
+    else
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    }
+
+    SDL_RenderFillRect(renderer, &playerRect);
+
+    // Enemy Color
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+
+    SDL_RenderFillRect(renderer, &enemyRect);
 
     SDL_RenderPresent(renderer);
 }

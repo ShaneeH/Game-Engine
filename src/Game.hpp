@@ -23,5 +23,15 @@ private:
     float rectX;
     float rectY;
 
+    float rectWidth;
+    float rectHeight;
+
+    float enemyX;
+    float enemyY;
+    float enemyWidth;
+    float enemyHeight;
+
+    bool collided;
+
     float velocityX;
 };
