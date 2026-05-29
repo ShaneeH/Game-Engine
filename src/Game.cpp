@@ -17,6 +17,15 @@ Game::Game()
 
     running = true;
 
+    // Timing
+
+    lastFrameTime = SDL_GetTicks();
+    deltaTime = 0.0f;
+
+    // Score
+
+    score = 0;
+
     // Player
 
     rectX = 100;
@@ -25,7 +34,7 @@ Game::Game()
     rectWidth = 200;
     rectHeight = 150;
 
-    moveSpeed = 5.0f;
+    moveSpeed = 300.0f;
 
     // Enemy
 
@@ -35,7 +44,7 @@ Game::Game()
     enemyWidth = 250;
     enemyHeight = 200;
 
-    enemyVelocityY = 0.3f;
+    enemyVelocityY = 200.0f;
 
     collided = false;
 
@@ -45,9 +54,7 @@ Game::Game()
 Game::~Game()
 {
     SDL_DestroyRenderer(renderer);
-
     SDL_DestroyWindow(window);
-
     SDL_Quit();
 }
 
@@ -56,9 +63,7 @@ void Game::Run()
     while (running)
     {
         ProcessInput();
-
         Update();
-
         Render();
 
         SDL_Delay(16);
@@ -85,36 +90,40 @@ void Game::ProcessInput()
         }
     }
 
-    // Continuous movement
-
     const bool* keyboardState = SDL_GetKeyboardState(NULL);
 
     if (keyboardState[SDL_SCANCODE_W])
     {
-        rectY -= moveSpeed;
+        rectY -= moveSpeed * deltaTime;
     }
 
     if (keyboardState[SDL_SCANCODE_S])
     {
-        rectY += moveSpeed;
+        rectY += moveSpeed * deltaTime;
     }
 
     if (keyboardState[SDL_SCANCODE_A])
     {
-        rectX -= moveSpeed;
+        rectX -= moveSpeed * deltaTime;
     }
 
     if (keyboardState[SDL_SCANCODE_D])
     {
-        rectX += moveSpeed;
+        rectX += moveSpeed * deltaTime;
     }
 }
 
 void Game::Update()
 {
+    Uint64 currentTime = SDL_GetTicks();
+
+    deltaTime = (currentTime - lastFrameTime) / 1000.0f;
+
+    lastFrameTime = currentTime;
+
     // Enemy movement
 
-    enemyY += enemyVelocityY;
+    enemyY += enemyVelocityY * deltaTime;
 
     if (enemyY >= 900 || enemyY <= 0)
     {
@@ -156,6 +165,18 @@ void Game::Update()
     {
         collided = false;
     }
+
+    // Score
+
+    static bool wasColliding = false;
+
+    if (collided && !wasColliding)
+    {
+        score++;
+        std::cout << "Score: " << score << "\n";
+    }
+
+    wasColliding = collided;
 }
 
 void Game::Render()
