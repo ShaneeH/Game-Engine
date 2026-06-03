@@ -1,6 +1,9 @@
 #include "Game.hpp"
 
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <string>
 
 Game::Game()
 {
@@ -16,6 +19,8 @@ Game::Game()
     renderer = SDL_CreateRenderer(window, NULL);
 
     running = true;
+
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
 
     // Timing
 
@@ -92,6 +97,8 @@ void Game::ProcessInput()
 
     const bool* keyboardState = SDL_GetKeyboardState(NULL);
 
+    // Player movement
+
     if (keyboardState[SDL_SCANCODE_W])
     {
         rectY -= moveSpeed * deltaTime;
@@ -121,7 +128,7 @@ void Game::Update()
 
     lastFrameTime = currentTime;
 
-    // Enemy movement
+    // Move enemy up and down
 
     enemyY += enemyVelocityY * deltaTime;
 
@@ -130,7 +137,7 @@ void Game::Update()
         enemyVelocityY *= -1;
     }
 
-    // Screen bounds
+    // Keep player on screen
 
     if (rectX < 0)
     {
@@ -152,7 +159,7 @@ void Game::Update()
         rectY = 1200 - rectHeight;
     }
 
-    // Collision
+    // AABB collision detection
 
     if (rectX < enemyX + enemyWidth &&
         rectX + rectWidth > enemyX &&
@@ -166,17 +173,30 @@ void Game::Update()
         collided = false;
     }
 
-    // Score
+    // Only score once when entering collision
 
     static bool wasColliding = false;
 
     if (collided && !wasColliding)
     {
         score++;
+
+        // Respawn enemy at random location
+
+        enemyX = static_cast<float>(std::rand() % 1300);
+        enemyY = static_cast<float>(std::rand() % 900);
+
         std::cout << "Score: " << score << "\n";
     }
 
     wasColliding = collided;
+
+    // Update window title
+
+    std::string title =
+        "Shane Engine - Score: " + std::to_string(score);
+
+    SDL_SetWindowTitle(window, title.c_str());
 }
 
 void Game::Render()
@@ -201,7 +221,7 @@ void Game::Render()
         enemyHeight
     };
 
-    // Player
+    // Player turns green on collision
 
     if (collided)
     {
