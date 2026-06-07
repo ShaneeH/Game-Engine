@@ -22,32 +22,17 @@ Game::Game()
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
-    // Timing
-
     lastFrameTime = SDL_GetTicks();
     deltaTime = 0.0f;
 
-    // Score
-
     score = 0;
+    highScore = 0;
 
-    // Player
+    enemyX = 700.0f;
+    enemyY = 300.0f;
 
-    rectX = 100;
-    rectY = 200;
-
-    rectWidth = 200;
-    rectHeight = 150;
-
-    moveSpeed = 300.0f;
-
-    // Enemy
-
-    enemyX = 700;
-    enemyY = 300;
-
-    enemyWidth = 250;
-    enemyHeight = 200;
+    enemyWidth = 250.0f;
+    enemyHeight = 200.0f;
 
     enemyVelocityY = 200.0f;
 
@@ -97,27 +82,7 @@ void Game::ProcessInput()
 
     const bool* keyboardState = SDL_GetKeyboardState(NULL);
 
-    // Player movement
-
-    if (keyboardState[SDL_SCANCODE_W])
-    {
-        rectY -= moveSpeed * deltaTime;
-    }
-
-    if (keyboardState[SDL_SCANCODE_S])
-    {
-        rectY += moveSpeed * deltaTime;
-    }
-
-    if (keyboardState[SDL_SCANCODE_A])
-    {
-        rectX -= moveSpeed * deltaTime;
-    }
-
-    if (keyboardState[SDL_SCANCODE_D])
-    {
-        rectX += moveSpeed * deltaTime;
-    }
+    player.Update(keyboardState, deltaTime);
 }
 
 void Game::Update()
@@ -128,43 +93,37 @@ void Game::Update()
 
     lastFrameTime = currentTime;
 
-    // Move enemy up and down
-
     enemyY += enemyVelocityY * deltaTime;
 
-    if (enemyY >= 900 || enemyY <= 0)
+    if (enemyY >= 900.0f || enemyY <= 0.0f)
     {
-        enemyVelocityY *= -1;
+        enemyVelocityY *= -1.0f;
     }
 
-    // Keep player on screen
-
-    if (rectX < 0)
+    if (player.x < 0.0f)
     {
-        rectX = 0;
+        player.x = 0.0f;
     }
 
-    if (rectX + rectWidth > 1600)
+    if (player.x + player.width > 1600.0f)
     {
-        rectX = 1600 - rectWidth;
+        player.x = 1600.0f - player.width;
     }
 
-    if (rectY < 0)
+    if (player.y < 0.0f)
     {
-        rectY = 0;
+        player.y = 0.0f;
     }
 
-    if (rectY + rectHeight > 1200)
+    if (player.y + player.height > 1200.0f)
     {
-        rectY = 1200 - rectHeight;
+        player.y = 1200.0f - player.height;
     }
 
-    // AABB collision detection
-
-    if (rectX < enemyX + enemyWidth &&
-        rectX + rectWidth > enemyX &&
-        rectY < enemyY + enemyHeight &&
-        rectY + rectHeight > enemyY)
+    if (player.x < enemyX + enemyWidth &&
+        player.x + player.width > enemyX &&
+        player.y < enemyY + enemyHeight &&
+        player.y + player.height > enemyY)
     {
         collided = true;
     }
@@ -173,28 +132,35 @@ void Game::Update()
         collided = false;
     }
 
-    // Only score once when entering collision
-
     static bool wasColliding = false;
 
     if (collided && !wasColliding)
     {
         score++;
 
-        // Respawn enemy at random location
+        if (score > highScore)
+        {
+            highScore = score;
+        }
 
         enemyX = static_cast<float>(std::rand() % 1300);
         enemyY = static_cast<float>(std::rand() % 900);
 
-        std::cout << "Score: " << score << "\n";
+        std::cout
+            << "Score: "
+            << score
+            << " | High Score: "
+            << highScore
+            << "\n";
     }
 
     wasColliding = collided;
 
-    // Update window title
-
     std::string title =
-        "Shane Engine - Score: " + std::to_string(score);
+        "Shane Engine - Score: " +
+        std::to_string(score) +
+        " High Score: " +
+        std::to_string(highScore);
 
     SDL_SetWindowTitle(window, title.c_str());
 }
@@ -205,13 +171,7 @@ void Game::Render()
 
     SDL_RenderClear(renderer);
 
-    SDL_FRect playerRect =
-    {
-        rectX,
-        rectY,
-        rectWidth,
-        rectHeight
-    };
+    SDL_FRect playerRect = player.GetRect();
 
     SDL_FRect enemyRect =
     {
@@ -220,8 +180,6 @@ void Game::Render()
         enemyWidth,
         enemyHeight
     };
-
-    // Player turns green on collision
 
     if (collided)
     {
@@ -233,8 +191,6 @@ void Game::Render()
     }
 
     SDL_RenderFillRect(renderer, &playerRect);
-
-    // Enemy
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include "../Player.hpp"
 
 class Game
 {
@@ -15,23 +16,18 @@ private:
     void Update();
     void Render();
 
-    bool running;
-
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-    // Player
+    bool running;
 
-    float rectX;
-    float rectY;
+    Uint64 lastFrameTime;
+    float deltaTime;
 
-    float rectWidth;
-    float rectHeight;
+    int score;
+    int highScore;
 
-    float moveSpeed;
-    float velocityX;
-
-    // Enemy
+    Player player;
 
     float enemyX;
     float enemyY;
@@ -42,13 +38,4 @@ private:
     float enemyVelocityY;
 
     bool collided;
-
-    // Timing
-
-    Uint64 lastFrameTime;
-    float deltaTime;
-
-    // Score
-
-    int score;
 };
