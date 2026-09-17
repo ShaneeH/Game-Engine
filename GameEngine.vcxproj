@@ -69,7 +69,20 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <SDLRoot Condition="'$(SDLRoot)'==''">C:\Users\shane\SDL3-3.4.8</SDLRoot>
+    <SDLPlatform Condition="'$(Platform)'=='Win32'">x86</SDLPlatform>
+    <SDLPlatform Condition="'$(Platform)'=='x64'">x64</SDLPlatform>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SDLRoot)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SDLRoot)\lib\$(SDLPlatform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -111,13 +124,10 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\shane\SDL3-3.4.8\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\shane\SDL3-3.4.8\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -132,13 +142,10 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\shane\SDL3-3.4.8\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\shane\SDL3-3.4.8\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -146,14 +153,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="Player.hpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.hpp" />
+    <ClInclude Include="Player.hpp" />
+    <ClInclude Include="Collision.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="CopySDL" AfterTargets="Build" Condition="Exists('$(SDLRoot)\lib\$(SDLPlatform)\SDL3.dll')">
+    <Copy SourceFiles="$(SDLRoot)\lib\$(SDLPlatform)\SDL3.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

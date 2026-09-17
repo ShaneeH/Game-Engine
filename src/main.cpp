@@ -1,10 +1,20 @@
+#include <SDL3/SDL_main.h>
 #include "Game.hpp"
 
-int main()
+#include <exception>
+#include <iostream>
+
+int main(int, char*[])
 {
-    Game game;
-
-    game.Run();
-
+    try
+    {
+        Game game;
+        game.Run();
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "Engine could not start: " << error.what() << '\n';
+        return 1;
+    }
     return 0;
 }

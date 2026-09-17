@@ -15,3 +15,9 @@ Release/
 
 # SDL runtime
 SDL3.dll
+build/
+.vs/
+x64/
+Debug/
+Release/
+*.user
