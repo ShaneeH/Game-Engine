@@ -51,19 +51,55 @@ Install SDL3 development files and CMake, then build from this folder:
 sudo dnf install gcc-c++ cmake SDL3-devel
 cmake -S . -B build
 cmake --build build
+ctest --test-dir build
 ./build/GameEngine
 ```
 
+Pass `-DGAMEENGINE_BUILD_TESTS=OFF` to skip the registry tests.
+
 The code needs SDL 3.2 or newer. It uses SDL's basic built in debug font, so no font files or SDL_ttf are required.
 
-## Files
+## Architecture
 
-Player.cpp handles movement and wall collisions.
-Collision.hpp contains the rectangle overlap check.
-src/Game.cpp handles the loop, round state, target, pickups and rendering.
-src/main.cpp starts the game.
+The engine uses a small entity component system. Entities are ids, components are plain structs and systems are functions that run over every entity with the components they need.
+
+```text
+src/
+  engine/       reusable engine code, no game rules
+  game/         this game, built on the engine
+  main.cpp      starts the game
+tests/          headless registry tests
+```
+
+### Engine
+
+| File | Contents |
+| --- | --- |
+| Entity.hpp | Entity id with an index and a generation, so stale handles are rejected after an index is reused. |
+| ComponentPool.hpp | Sparse set storage. Components sit packed in one array for fast iteration and are removed by swapping with the last slot. |
+| Registry.hpp | Creates and destroys entities, adds, gets and removes components, and runs `View<Ts...>` over entities that have every listed component. |
+| Components.hpp | Transform, Velocity, Collider, Solid, Bounds and Renderable. |
+| Systems.cpp | MovementSystem moves one axis at a time and slides or bounces against Solid entities and Bounds. FlashSystem and RenderSystem handle drawing. |
+| Collision.hpp | The rectangle overlap check. |
+
+### Game
+
+| File | Contents |
+| --- | --- |
+| GameComponents.hpp | PlayerControl, Pickup, Target and Wall. |
+| GameState.hpp | Score, best score, timer, pause and game over. |
+| GameSystems.cpp | InputSystem, PickupSystem, HudSystem and spawn placement. |
+| Game.cpp | SDL setup, the main loop, input events and creating the entities for each round. |
+
+Each frame runs Flash, Input, Movement and Pickup systems, then Render and HUD.
+Restarting clears the registry and creates the walls, player, target and pickups again.
+
+A new object is usually just a new entity. For example, a wall is Transform, Collider, Solid, Wall and Renderable.
 
 ## Validation
+
+The ECS version built against SDL 3.2 with CMake and GCC with Wall and Wextra and no warnings. The registry tests pass, and a headless harness checked normalized diagonal speed, sliding along a wall, target bouncing, catching the target and the green flash.
+
 
 The complete project built against SDL 3.2.10 using CMake and GCC with Wall, Wextra and Werror enabled.
 A C++ harness using real SDL checked movement, collisions on all four sides, sprinting, 1,000 spawn layouts, scoring, pause, restart, timer expiry, target bouncing and quit handling. Rendering was exercised with the SDL dummy video driver.
