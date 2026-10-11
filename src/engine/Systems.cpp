@@ -13,7 +13,7 @@ namespace
         SDL_FRect rect;
     };
 
-    // Returns true when the axis was blocked.
+    // Moves along one axis and fixes up any overlap. Returns true when the axis was blocked.
     bool MoveAxis(float& position, float& velocity, float deltaTime, bool horizontal,
         Transform& transform, const Collider& collider, const Bounds* bounds,
         const std::vector<SolidBox>& solids, Entity self)
@@ -26,6 +26,7 @@ namespace
 
         if (collider.response == CollisionResponse::Slide)
         {
+            // Snap flush against the side of the solid we ran into.
             float size = horizontal ? collider.width : collider.height;
             for (const SolidBox& solid : solids)
             {
@@ -52,6 +53,7 @@ namespace
 
         if (collider.response == CollisionResponse::Bounce)
         {
+            // Bouncers just step back to where they were and turn around.
             for (const SolidBox& solid : solids)
             {
                 if (solid.entity != self && IsColliding(GetRect(transform, collider), solid.rect))
@@ -68,6 +70,7 @@ namespace
 
 void MovementSystem(Registry& registry, float deltaTime)
 {
+    // Gather the solids once up front instead of looking them up per mover.
     std::vector<SolidBox> solids;
     registry.View<Solid, Transform, Collider>([&](Entity entity, Solid&, Transform& transform, Collider& collider)
     {
@@ -84,6 +87,7 @@ void MovementSystem(Registry& registry, float deltaTime)
             return;
         }
 
+        // X then Y separately, so hitting a wall on one axis doesn't stop the other.
         const Bounds* bounds = registry.TryGet<Bounds>(entity);
         MoveAxis(transform.x, velocity.x, deltaTime, true, transform, *collider, bounds, solids, entity);
         MoveAxis(transform.y, velocity.y, deltaTime, false, transform, *collider, bounds, solids, entity);

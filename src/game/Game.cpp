@@ -97,6 +97,7 @@ void Game::Reset()
     state.paused = false;
     state.gameOver = false;
 
+    // Rebuild the whole round from scratch. Walls go first so spawns avoid them.
     registry.Clear();
     CreateWall({ 350.0f, 300.0f, 60.0f, 330.0f });
     CreateWall({ 700.0f, 750.0f, 350.0f, 60.0f });
@@ -163,6 +164,7 @@ void Game::Update()
         return;
     }
 
+    // Order matters: input sets velocity, movement uses it, then pickups see the new positions.
     FlashSystem(registry, deltaTime);
     InputSystem(registry, SDL_GetKeyboardState(nullptr));
     MovementSystem(registry, deltaTime);

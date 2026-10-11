@@ -15,6 +15,7 @@ class Registry
 public:
     Entity Create()
     {
+        // Reuse a freed slot first so the arrays don't keep growing.
         std::uint32_t index;
         if (!freeIndices.empty())
         {
@@ -40,6 +41,7 @@ public:
         {
             if (pool) pool->Remove(entity.index);
         }
+        // Bumping the generation makes any old copies of this handle invalid.
         generations[entity.index]++;
         living[entity.index] = false;
         freeIndices.push_back(entity.index);
@@ -137,6 +139,8 @@ public:
     }
 
 private:
+    // Each component type gets a small number the first time it's used,
+    // which doubles as its slot in the pools array.
     template <typename T>
     static std::size_t TypeId()
     {
@@ -144,6 +148,7 @@ private:
         return id;
     }
 
+    // Pools are created lazily on first use.
     template <typename T>
     ComponentPool<T>& Pool()
     {

@@ -27,6 +27,7 @@ public:
     template <typename... Args>
     T& Add(std::uint32_t index, Args&&... args)
     {
+        // Adding twice just overwrites the existing component.
         if (Has(index))
         {
             T& existing = components[sparse[index]];

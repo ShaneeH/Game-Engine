@@ -36,6 +36,7 @@ bool FindSpawn(Registry& registry, const World& world, SDL_FRect& rect)
     int width = static_cast<int>(world.width);
     int height = static_cast<int>(world.height);
 
+    // Try random spots first, then fall back to a grid scan if the map is crowded.
     for (int attempt = 0; attempt < 100; attempt++)
     {
         SDL_FRect candidate = rect;
@@ -107,6 +108,7 @@ void PickupSystem(Registry& registry, GameState& state, const World& world)
         transform.y = next.y;
         state.targetsCaught++;
         AddScore(registry, state, player, target.points);
+        // Each catch makes the target a little faster, keeping its current direction.
         float speed = std::min(target.maxSpeed, target.baseSpeed + static_cast<float>(state.targetsCaught) * target.speedStep);
         velocity.y = velocity.y < 0.0f ? -speed : speed;
     });
