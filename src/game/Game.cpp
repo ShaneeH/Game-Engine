@@ -1,5 +1,5 @@
 #include "Game.hpp"
-#include "../Collision.hpp"
+#include "../engine/Collision.hpp"
 
 #include <algorithm>
 #include <cmath>

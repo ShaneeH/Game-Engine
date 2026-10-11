@@ -1,5 +1,5 @@
 #include <SDL3/SDL_main.h>
-#include "Game.hpp"
+#include "game/Game.hpp"
 
 #include <exception>
 #include <iostream>

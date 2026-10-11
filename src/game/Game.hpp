@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <vector>
-#include "../Player.hpp"
+#include "Player.hpp"
 
 class Game
 {
