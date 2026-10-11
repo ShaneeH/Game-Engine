@@ -152,14 +152,22 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\game\Player.cpp" />
+    <ClCompile Include="src\engine\Systems.cpp" />
     <ClCompile Include="src\game\Game.cpp" />
+    <ClCompile Include="src\game\GameSystems.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\game\Game.hpp" />
-    <ClInclude Include="src\game\Player.hpp" />
     <ClInclude Include="src\engine\Collision.hpp" />
+    <ClInclude Include="src\engine\ComponentPool.hpp" />
+    <ClInclude Include="src\engine\Components.hpp" />
+    <ClInclude Include="src\engine\Entity.hpp" />
+    <ClInclude Include="src\engine\Registry.hpp" />
+    <ClInclude Include="src\engine\Systems.hpp" />
+    <ClInclude Include="src\game\Game.hpp" />
+    <ClInclude Include="src\game\GameComponents.hpp" />
+    <ClInclude Include="src\game\GameState.hpp" />
+    <ClInclude Include="src\game\GameSystems.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopySDL" AfterTargets="Build" Condition="Exists('$(SDLRoot)\lib\$(SDLPlatform)\SDL3.dll')">

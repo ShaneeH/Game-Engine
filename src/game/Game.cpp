@@ -1,8 +1,9 @@
 #include "Game.hpp"
-#include "../engine/Collision.hpp"
+#include "GameComponents.hpp"
+#include "../engine/Components.hpp"
+#include "../engine/Systems.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -34,12 +35,6 @@ Game::Game()
         SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
-
-    walls = {
-        { 350.0f, 300.0f, 60.0f, 330.0f },
-        { 700.0f, 750.0f, 350.0f, 60.0f },
-        { 1150.0f, 250.0f, 60.0f, 350.0f }
-    };
 
     Reset();
     running = true;
@@ -76,12 +71,12 @@ void Game::ProcessInput()
     while (SDL_PollEvent(&event))
     {
         if (event.type == SDL_EVENT_QUIT) running = false;
-        if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) paused = true;
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) state.paused = true;
 
         if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
         {
             if (event.key.key == SDLK_ESCAPE) running = false;
-            if (event.key.key == SDLK_P && !gameOver) paused = !paused;
+            if (event.key.key == SDLK_P && !state.gameOver) state.paused = !state.paused;
             if (event.key.key == SDLK_R) Reset();
             if (event.key.key == SDLK_F11)
             {
@@ -96,131 +91,82 @@ void Game::ProcessInput()
 
 void Game::Reset()
 {
-    player.Reset();
-    score = 0;
-    targetsCaught = 0;
-    timeLeft = 60.0f;
-    collectFlash = 0.0f;
-    paused = false;
-    gameOver = false;
-    enemyVelocityY = 200.0f;
-    enemyRect = { 700.0f, 300.0f, 80.0f, 80.0f };
+    state.score = 0;
+    state.targetsCaught = 0;
+    state.timeLeft = GameState::roundLength;
+    state.paused = false;
+    state.gameOver = false;
 
-    coins.clear();
-    for (int i = 0; i < 6; i++)
-    {
-        SDL_FRect coin = { 0.0f, 0.0f, 24.0f, 24.0f };
-        if (FindSpawn(coin)) coins.push_back(coin);
-    }
+    registry.Clear();
+    CreateWall({ 350.0f, 300.0f, 60.0f, 330.0f });
+    CreateWall({ 700.0f, 750.0f, 350.0f, 60.0f });
+    CreateWall({ 1150.0f, 250.0f, 60.0f, 350.0f });
+    CreatePlayer();
+    CreateTarget();
+    for (int i = 0; i < 6; i++) CreatePickup();
 }
 
-bool Game::IsSpawnFree(const SDL_FRect& rect) const
+void Game::CreateWall(const SDL_FRect& rect)
 {
-    if (IsColliding(rect, player.GetRect()) || IsColliding(rect, enemyRect)) return false;
-
-    for (const SDL_FRect& wall : walls)
-    {
-        if (IsColliding(rect, wall)) return false;
-    }
-    for (const SDL_FRect& coin : coins)
-    {
-        if (IsColliding(rect, coin)) return false;
-    }
-    return true;
+    Entity wall = registry.Create();
+    registry.Add<Transform>(wall, rect.x, rect.y);
+    registry.Add<Collider>(wall, rect.w, rect.h);
+    registry.Add<Solid>(wall);
+    registry.Add<Wall>(wall);
+    registry.Add<Renderable>(wall, SDL_Color{ 85, 90, 110, 255 }, 0);
 }
 
-bool Game::FindSpawn(SDL_FRect& rect)
+void Game::CreatePlayer()
 {
-    for (int attempt = 0; attempt < 100; attempt++)
-    {
-        SDL_FRect candidate = rect;
-        candidate.x = 30.0f + static_cast<float>(std::rand() % (worldWidth - 60 - static_cast<int>(rect.w)));
-        candidate.y = 120.0f + static_cast<float>(std::rand() % (worldHeight - 150 - static_cast<int>(rect.h)));
-        if (IsSpawnFree(candidate))
-        {
-            rect = candidate;
-            return true;
-        }
-    }
-
-    for (float y = 120.0f; y + rect.h < worldHeight - 30.0f; y += 40.0f)
-    {
-        for (float x = 30.0f; x + rect.w < worldWidth - 30.0f; x += 40.0f)
-        {
-            SDL_FRect candidate = { x, y, rect.w, rect.h };
-            if (IsSpawnFree(candidate))
-            {
-                rect = candidate;
-                return true;
-            }
-        }
-    }
-    return false;
+    Entity player = registry.Create();
+    registry.Add<Transform>(player, 100.0f, 200.0f);
+    registry.Add<Velocity>(player);
+    registry.Add<Collider>(player, 64.0f, 64.0f, CollisionResponse::Slide);
+    registry.Add<Bounds>(player, SDL_FRect{ 0.0f, 0.0f, world.width, world.height });
+    registry.Add<PlayerControl>(player);
+    registry.Add<Renderable>(player, SDL_Color{ 235, 75, 85, 255 }, 3, SDL_Color{ 80, 230, 130, 255 });
 }
 
-void Game::AddScore(int points)
+void Game::CreateTarget()
 {
-    score += points;
-    highScore = std::max(score, highScore);
-    collectFlash = 0.15f;
+    Target target;
+    Entity entity = registry.Create();
+    registry.Add<Transform>(entity, 700.0f, 300.0f);
+    registry.Add<Velocity>(entity, 0.0f, target.baseSpeed);
+    registry.Add<Collider>(entity, 80.0f, 80.0f, CollisionResponse::Bounce);
+    // The top 100 pixels are kept clear for the HUD.
+    registry.Add<Bounds>(entity, SDL_FRect{ 0.0f, 100.0f, world.width, world.height - 100.0f });
+    registry.Add<Target>(entity, target);
+    registry.Add<Renderable>(entity, SDL_Color{ 65, 135, 245, 255 }, 2);
+}
+
+void Game::CreatePickup()
+{
+    SDL_FRect rect = { 0.0f, 0.0f, 24.0f, 24.0f };
+    if (!FindSpawn(registry, world, rect)) return;
+
+    Entity pickup = registry.Create();
+    registry.Add<Transform>(pickup, rect.x, rect.y);
+    registry.Add<Collider>(pickup, rect.w, rect.h);
+    registry.Add<Pickup>(pickup);
+    registry.Add<Renderable>(pickup, SDL_Color{ 245, 200, 65, 255 }, 1);
 }
 
 void Game::Update()
 {
-    if (paused || gameOver) return;
+    if (state.paused || state.gameOver) return;
 
-    timeLeft = std::max(0.0f, timeLeft - deltaTime);
-    if (timeLeft == 0.0f)
+    state.timeLeft = std::max(0.0f, state.timeLeft - deltaTime);
+    if (state.timeLeft == 0.0f)
     {
-        gameOver = true;
+        state.gameOver = true;
         return;
     }
 
-    collectFlash = std::max(0.0f, collectFlash - deltaTime);
-    player.Update(SDL_GetKeyboardState(nullptr), deltaTime, walls, worldWidth, worldHeight);
-
-    float oldY = enemyRect.y;
-    enemyRect.y += enemyVelocityY * deltaTime;
-    if (enemyRect.y < 100.0f || enemyRect.y + enemyRect.h > worldHeight)
-    {
-        enemyRect.y = std::clamp(enemyRect.y, 100.0f, worldHeight - enemyRect.h);
-        enemyVelocityY *= -1.0f;
-    }
-    for (const SDL_FRect& wall : walls)
-    {
-        if (IsColliding(enemyRect, wall))
-        {
-            enemyRect.y = oldY;
-            enemyVelocityY *= -1.0f;
-            break;
-        }
-    }
-
-    if (IsColliding(player.GetRect(), enemyRect))
-    {
-        SDL_FRect nextTarget = enemyRect;
-        if (FindSpawn(nextTarget))
-        {
-            enemyRect = nextTarget;
-            targetsCaught++;
-            AddScore(10);
-            float speed = std::min(420.0f, 200.0f + targetsCaught * 20.0f);
-            enemyVelocityY = enemyVelocityY < 0.0f ? -speed : speed;
-        }
-    }
-
-    for (SDL_FRect& coin : coins)
-    {
-        if (IsColliding(player.GetRect(), coin))
-        {
-            SDL_FRect nextCoin = coin;
-            if (FindSpawn(nextCoin))
-            {
-                coin = nextCoin;
-                AddScore(1);
-            }
-        }
-    }
+    FlashSystem(registry, deltaTime);
+    InputSystem(registry, SDL_GetKeyboardState(nullptr));
+    MovementSystem(registry, deltaTime);
+    PickupSystem(registry, state, world);
 }
 
 void Game::Render()
@@ -238,38 +184,7 @@ void Game::Render()
         SDL_RenderLine(renderer, 0.0f, static_cast<float>(y), worldWidth, static_cast<float>(y));
     }
 
-    SDL_SetRenderDrawColor(renderer, 85, 90, 110, 255);
-    for (const SDL_FRect& wall : walls) SDL_RenderFillRect(renderer, &wall);
-
-    SDL_SetRenderDrawColor(renderer, 245, 200, 65, 255);
-    for (const SDL_FRect& coin : coins) SDL_RenderFillRect(renderer, &coin);
-
-    SDL_SetRenderDrawColor(renderer, 65, 135, 245, 255);
-    SDL_RenderFillRect(renderer, &enemyRect);
-
-    SDL_FRect playerRect = player.GetRect();
-    if (collectFlash > 0.0f) SDL_SetRenderDrawColor(renderer, 80, 230, 130, 255);
-    else SDL_SetRenderDrawColor(renderer, 235, 75, 85, 255);
-    SDL_RenderFillRect(renderer, &playerRect);
-
-    SDL_SetRenderScale(renderer, 2.0f, 2.0f);
-    SDL_SetRenderDrawColor(renderer, 240, 240, 245, 255);
-    std::string hud = "Score: " + std::to_string(score) + "    Best: " + std::to_string(highScore)
-        + "    Time: " + std::to_string(static_cast<int>(std::ceil(timeLeft)));
-    SDL_RenderDebugText(renderer, 12.0f, 10.0f, hud.c_str());
-    SDL_RenderDebugText(renderer, 12.0f, 25.0f, "WASD / Arrows: move   Shift: sprint   P: pause   R: restart");
-    SDL_RenderDebugText(renderer, 12.0f, 40.0f, "Blue: 10 points   Gold: 1 point   F11: fullscreen   Esc: quit");
-
-    if (paused || gameOver)
-    {
-        SDL_FRect panel = { 220.0f, 260.0f, 360.0f, 75.0f };
-        SDL_SetRenderDrawColor(renderer, 35, 35, 55, 255);
-        SDL_RenderFillRect(renderer, &panel);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderDebugText(renderer, 250.0f, 280.0f,
-            gameOver ? "TIME UP! Press R to play again" : "PAUSED. Press P to continue");
-        SDL_RenderDebugText(renderer, 250.0f, 300.0f, hud.c_str());
-    }
-    SDL_SetRenderScale(renderer, 1.0f, 1.0f);
+    RenderSystem(registry, renderer);
+    HudSystem(renderer, state);
     SDL_RenderPresent(renderer);
 }
